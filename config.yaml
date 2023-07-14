@@ -1,0 +1,18 @@
+---
+database:
+  host: host.docker.internal
+  user: camunda
+  name: workflow
+  password: camunda
+  port: 5431
+  ssl_mode: disable
+  batch_size: 100
+kassette-server:
+  url: http://host.docker.internal:8088/extract
+  batch_size: 10
+kassette-agent:
+  uid: camunda
+tables:
+  act_hi_actinst:
+    track_column: start_time_
+    id_column: id_
