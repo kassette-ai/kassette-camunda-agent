@@ -1,0 +1,6 @@
+#go package dependencies
+go.mod
+go.sum
+
+#binary files
+kassette-agent
