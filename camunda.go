@@ -27,6 +27,10 @@ type TableConfig struct {
 	Config []map[string]string `json:"config"`
 }
 
+type SourceAdvancedConfig struct {
+	Source []TableConfig `json:"source_config"`
+}
+
 func GetConnectionString() string {
 	return fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=%s",
@@ -47,8 +51,8 @@ func submitPayload(jsonData []byte, payloadType string) {
 	maxBackoff := 10 * time.Second
 	if payloadType == "batch" {
 		url = baseUrl + "/extract"
-	} else if payloadType == "config" {
-		url = baseUrl + "/config"
+	} else if payloadType == "configtable" {
+		url = baseUrl + "/configtable"
 	} else {
 		log.Fatal("Unknown payload type: ", payloadType)
 	}
@@ -233,21 +237,27 @@ func main() {
 	defer db.Close()
 
 	// initialise the tables and transfer schema to kassette-server
+	var advancedConfig SourceAdvancedConfig
+	advancedConfig.Source = make([]TableConfig, 0)
+
 	for table, _ := range trackTables {
 		schema := get_table_schema(db, table)
 		var tableConfig TableConfig
 		tableConfig.Agent = "camunda"
 		tableConfig.Type = table
 		tableConfig.Config = schema
-
-		jsonData, err := json.Marshal(tableConfig)
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-		log.Printf("Json object: %s", string(jsonData))
-		submitPayload(jsonData, "config")
+		advancedConfig.Source = append(advancedConfig.Source, tableConfig)
 	}
+
+	jsonData, err := json.Marshal(advancedConfig)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	log.Printf("Json object: %s", string(jsonData))
+	submitPayload(jsonData, "configtable")
+
 	// Create a ticker that polls the database every 10 seconds
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
