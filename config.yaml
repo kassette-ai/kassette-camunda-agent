@@ -16,3 +16,6 @@ tables:
   act_hi_actinst:
     track_column: start_time_
     id_column: id_
+  act_hi_detail:
+    track_column: time_
+    id_column: id_    
