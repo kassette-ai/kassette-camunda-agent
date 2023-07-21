@@ -21,6 +21,16 @@ type Payload struct {
 	Batch []map[string]interface{} `json:"batch"`
 }
 
+type TableConfig struct {
+	Agent  string              `json:"kassette_data_agent"`
+	Type   string              `json:"kassette_data_type"`
+	Config []map[string]string `json:"config"`
+}
+
+type SourceAdvancedConfig struct {
+	Source []TableConfig `json:"source_config"`
+}
+
 func GetConnectionString() string {
 	return fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=%s",
@@ -32,13 +42,20 @@ func GetConnectionString() string {
 		viper.GetString("database.ssl_mode"))
 }
 
-func submitPayload(jsonData []byte) {
-	url := viper.GetString("kassette-server.url")
+func submitPayload(jsonData []byte, payloadType string) {
+	var url string
+	baseUrl := viper.GetString("kassette-server.url")
 	uid := viper.GetString("kassette-agent.uid")
 	maxAttempts := 20
 	initialBackoff := 1 * time.Second
 	maxBackoff := 10 * time.Second
-
+	if payloadType == "batch" {
+		url = baseUrl + "/extract"
+	} else if payloadType == "configtable" {
+		url = baseUrl + "/configtable"
+	} else {
+		log.Fatal("Unknown payload type: ", payloadType)
+	}
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
@@ -83,7 +100,7 @@ func startWorker(activitiInstances []map[string]interface{}) {
 		return
 	}
 	log.Printf("Json object: %s", string(jsonData))
-	submitPayload(jsonData)
+	submitPayload(jsonData, "batch")
 }
 
 func get_new_records(dbHandler *sql.DB, tableName string, dbBatchSize string, trackColumn string, trackPosition time.Time, idColumn string, idExclude []string) (time.Time, []string, []map[string]interface{}) {
@@ -150,6 +167,32 @@ func get_new_records(dbHandler *sql.DB, tableName string, dbBatchSize string, tr
 	}
 	return lastTrackPosition, fetchedIds, data
 }
+func get_table_schema(dbHandler *sql.DB, tableName string) []map[string]string {
+	query := fmt.Sprintf("SELECT column_name,data_type FROM information_schema.columns WHERE table_name = '%s';", tableName)
+	// Execute the SQL statement and retrieve the rows
+	rows, err := dbHandler.QueryContext(context.Background(), query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var keyValuePairs []map[string]string
+
+	for rows.Next() {
+		var key, value string
+		err := rows.Scan(&key, &value)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		pair := map[string]string{
+			key: value,
+		}
+
+		keyValuePairs = append(keyValuePairs, pair)
+	}
+
+	return keyValuePairs
+
+}
 
 func main() {
 	// Load Config file
@@ -192,6 +235,28 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	// initialise the tables and transfer schema to kassette-server
+	var advancedConfig SourceAdvancedConfig
+	advancedConfig.Source = make([]TableConfig, 0)
+
+	for table, _ := range trackTables {
+		schema := get_table_schema(db, table)
+		var tableConfig TableConfig
+		tableConfig.Agent = "camunda"
+		tableConfig.Type = table
+		tableConfig.Config = schema
+		advancedConfig.Source = append(advancedConfig.Source, tableConfig)
+	}
+
+	jsonData, err := json.Marshal(advancedConfig)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	log.Printf("Json object: %s", string(jsonData))
+	submitPayload(jsonData, "configtable")
 
 	// Create a ticker that polls the database every 10 seconds
 	ticker := time.NewTicker(10 * time.Second)
