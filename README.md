@@ -10,3 +10,13 @@ Data sent to the kassette-server via REST API
 2. checkout and run kassette-server project. https://github.com/kassette-ai/kassette-server
 3. run docker-compose up
 
+### Releasing
+
+We will use git tags to track the versions 
+```
+git tag -a v1.0.0 -m "First tagged release of the kassette-agent"
+git push --tags
+```
+
+
+### Usage
