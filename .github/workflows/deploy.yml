@@ -21,11 +21,6 @@ jobs:
       with: 
         token: ${{ secrets.GITHUB_TOKEN }}
       id: install
-    - name: 'Agent Deploy'
-      uses: 'azure/setup-helm@v3'
-      with: 
-        token: ${{ secrets.GITHUB_TOKEN }}
-      id: install
     - name: add metaops helm repo
       run: helm repo add metaops https://metaops-solutions.github.io/helm-charts
     - name: install release
