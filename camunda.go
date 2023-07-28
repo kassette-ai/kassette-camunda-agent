@@ -15,20 +15,44 @@ import (
 	"github.com/spf13/viper"
 )
 
-type TableRow map[string]interface{}
+type ActivitiInstanceSql struct {
+	Actinst_id_               sql.NullString `json:"actinst_id_"`
+	Actinst_proc_inst_id_     sql.NullString `json:"actinst_proc_inst_id_"`
+	Actinst_act_name_         sql.NullString `json:"actinst_act_name_"`
+	Actinst_act_type_         sql.NullString `json:"actinst_act_type_"`
+	Actinst_sequence_counter_ sql.NullInt64  `json:"actinst_sequence_counter_"`
+	Actinst_proc_def_key_     sql.NullString `json:"actinst_proc_def_key_"`
+	Procdef_name_             sql.NullString `json:"procdef_name_"`
+	Actinst_assignee_         sql.NullString `json:"actinst_assignee_"`
+	Actinst_start_time_       sql.NullTime   `json:"actinst_start_time_"`
+	Actinst_end_time_         sql.NullTime   `json:"actinst_end_time_"`
+	Actinst_duration          sql.NullInt64  `json:"actinst_duration_"`
+	Actinst_act_inst_state_   sql.NullString `json:"actinst_act_inst_state_"`
+	Detail_type_              sql.NullString `json:"detail_type_"`
+	Detail_var_type_          sql.NullString `json:"detail_var_type_"`
+	Detail_name_              sql.NullString `json:"detail_name_"`
+}
+
+type ActivitiInstance struct {
+	Actinst_id_               string `json:"actinst_id_"`
+	Actinst_proc_inst_id_     string `json:"actinst_proc_inst_id_"`
+	Actinst_act_name_         string `json:"actinst_act_name_"`
+	Actinst_act_type_         string `json:"actinst_act_type_"`
+	Actinst_sequence_counter_ *int64 `json:"actinst_sequence_counter_"`
+	Actinst_proc_def_key_     string `json:"actinst_proc_def_key_"`
+	Procdef_name_             string `json:"procdef_name_"`
+	Actinst_assignee_         string `json:"actinst_assignee_"`
+	Actinst_start_time_       string `json:"actinst_start_time_"`
+	Actinst_end_time_         string `json:"actinst_end_time_"`
+	Actinst_duration          *int64 `json:"actinst_duration_"`
+	Actinst_act_inst_state_   string `json:"actinst_act_inst_state_"`
+	Detail_type_              string `json:"detail_type_"`
+	Detail_var_type_          string `json:"detail_var_type_"`
+	Detail_name_              string `json:"detail_name_"`
+}
 
 type Payload struct {
-	Batch []map[string]interface{} `json:"batch"`
-}
-
-type TableConfig struct {
-	Agent  string              `json:"kassette_data_agent"`
-	Type   string              `json:"kassette_data_type"`
-	Config []map[string]string `json:"config"`
-}
-
-type SourceAdvancedConfig struct {
-	Source []TableConfig `json:"source_config"`
+	Batch []ActivitiInstance `json:"batch"`
 }
 
 func GetConnectionString() string {
@@ -42,20 +66,13 @@ func GetConnectionString() string {
 		viper.GetString("database.ssl_mode"))
 }
 
-func submitPayload(jsonData []byte, payloadType string) {
-	var url string
-	baseUrl := viper.GetString("kassette-server.url")
+func submitPayload(jsonData []byte) {
+	url := viper.GetString("kassette-server.url")
 	uid := viper.GetString("kassette-agent.uid")
 	maxAttempts := 20
 	initialBackoff := 1 * time.Second
 	maxBackoff := 10 * time.Second
-	if payloadType == "batch" {
-		url = baseUrl + "/extract"
-	} else if payloadType == "configtable" {
-		url = baseUrl + "/configtable"
-	} else {
-		log.Fatal("Unknown payload type: ", payloadType)
-	}
+
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
@@ -89,7 +106,107 @@ func submitPayload(jsonData []byte, payloadType string) {
 	log.Fatal("Max retry attempts reached")
 }
 
-func startWorker(activitiInstances []map[string]interface{}) {
+func sql2strings(activitiInstanceSql ActivitiInstanceSql) ActivitiInstance {
+
+	var activitiInstance ActivitiInstance
+	log.Printf("fetched record %s, with name %s at %s", activitiInstanceSql.Actinst_proc_inst_id_.String, activitiInstanceSql.Actinst_act_name_.String, activitiInstanceSql.Actinst_start_time_.Time.String())
+
+	// convert SQL type into Strings
+	if activitiInstanceSql.Actinst_id_.Valid {
+		activitiInstance.Actinst_id_ = activitiInstanceSql.Actinst_id_.String
+	} else {
+		activitiInstance.Actinst_id_ = ""
+	}
+
+	if activitiInstanceSql.Actinst_proc_inst_id_.Valid {
+		activitiInstance.Actinst_proc_inst_id_ = activitiInstanceSql.Actinst_proc_inst_id_.String
+	} else {
+		activitiInstance.Actinst_proc_inst_id_ = ""
+	}
+
+	if activitiInstanceSql.Actinst_act_name_.Valid {
+		activitiInstance.Actinst_act_name_ = activitiInstanceSql.Actinst_act_name_.String
+	} else {
+		activitiInstance.Actinst_act_name_ = ""
+	}
+
+	if activitiInstanceSql.Actinst_act_type_.Valid {
+		activitiInstance.Actinst_act_type_ = activitiInstanceSql.Actinst_act_type_.String
+	} else {
+		activitiInstance.Actinst_act_type_ = ""
+	}
+
+	if activitiInstanceSql.Actinst_sequence_counter_.Valid {
+		log.Printf("this is %s", activitiInstanceSql.Actinst_sequence_counter_.Int64)
+		activitiInstance.Actinst_sequence_counter_ = &activitiInstanceSql.Actinst_sequence_counter_.Int64
+	} else {
+		activitiInstance.Actinst_sequence_counter_ = nil
+	}
+
+	if activitiInstanceSql.Actinst_proc_def_key_.Valid {
+		activitiInstance.Actinst_proc_def_key_ = activitiInstanceSql.Actinst_proc_def_key_.String
+	} else {
+		activitiInstance.Actinst_proc_def_key_ = ""
+	}
+
+	if activitiInstanceSql.Actinst_assignee_.Valid {
+		activitiInstance.Actinst_assignee_ = activitiInstanceSql.Actinst_assignee_.String
+	} else {
+		activitiInstance.Actinst_assignee_ = ""
+	}
+
+	if activitiInstanceSql.Actinst_start_time_.Valid {
+		activitiInstance.Actinst_start_time_ = activitiInstanceSql.Actinst_start_time_.Time.Format("2006-01-02 15:04:05")
+	} else {
+		activitiInstance.Actinst_start_time_ = ""
+	}
+
+	if activitiInstanceSql.Actinst_end_time_.Valid {
+		activitiInstance.Actinst_end_time_ = activitiInstanceSql.Actinst_end_time_.Time.Format("2006-01-02 15:04:05")
+	} else {
+		activitiInstance.Actinst_end_time_ = ""
+	}
+
+	if activitiInstanceSql.Actinst_duration.Valid {
+		log.Printf("thas is %s", activitiInstanceSql.Actinst_duration)
+		activitiInstance.Actinst_duration = &activitiInstanceSql.Actinst_duration.Int64
+	} else {
+		activitiInstance.Actinst_duration = nil
+	}
+
+	if activitiInstanceSql.Actinst_act_inst_state_.Valid {
+		activitiInstance.Actinst_act_inst_state_ = activitiInstanceSql.Actinst_act_inst_state_.String
+	} else {
+		activitiInstance.Actinst_act_inst_state_ = ""
+	}
+
+	if activitiInstanceSql.Procdef_name_.Valid {
+		activitiInstance.Procdef_name_ = activitiInstanceSql.Procdef_name_.String
+	} else {
+		activitiInstance.Procdef_name_ = ""
+	}
+
+	if activitiInstanceSql.Detail_type_.Valid {
+		activitiInstance.Detail_type_ = activitiInstanceSql.Detail_type_.String
+	} else {
+		activitiInstance.Detail_type_ = ""
+	}
+
+	if activitiInstanceSql.Detail_var_type_.Valid {
+		activitiInstance.Detail_var_type_ = activitiInstanceSql.Detail_var_type_.String
+	} else {
+		activitiInstance.Detail_var_type_ = ""
+	}
+
+	if activitiInstanceSql.Detail_name_.Valid {
+		activitiInstance.Detail_name_ = activitiInstanceSql.Detail_name_.String
+	} else {
+		activitiInstance.Detail_name_ = ""
+	}
+	return activitiInstance
+}
+
+func startWorker(activitiInstances []ActivitiInstance) {
 	// create the payload
 	var payload Payload
 	payload.Batch = activitiInstances
@@ -100,98 +217,7 @@ func startWorker(activitiInstances []map[string]interface{}) {
 		return
 	}
 	log.Printf("Json object: %s", string(jsonData))
-	submitPayload(jsonData, "batch")
-}
-
-func get_new_records(dbHandler *sql.DB, tableName string, dbBatchSize string, trackColumn string, trackPosition time.Time, idColumn string, idExclude []string) (time.Time, []string, []map[string]interface{}) {
-	var lastTrackPosition time.Time
-	fetchedIds := make([]string, 0)
-	query := fmt.Sprintf("SELECT * FROM %s where %s > $1 and %s not in ($2) limit %s;", tableName, trackColumn, idColumn, dbBatchSize)
-	// Execute the SQL statement and retrieve the rows
-	rows, err := dbHandler.QueryContext(context.Background(), query, trackPosition, strings.Join(idExclude, ", "))
-	if err != nil {
-		log.Fatal(err)
-	}
-	data := make([]map[string]interface{}, 0)
-
-	// Iterate over the rows
-	for rows.Next() {
-		// Create a map to hold the row data
-		record := make(TableRow)
-
-		// Get the column names
-		columns, err := rows.Columns()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Create a slice to hold the column values
-		values := make([]interface{}, len(columns))
-		for i := range values {
-			values[i] = new(interface{})
-		}
-
-		// Scan the row values into the slice
-		err = rows.Scan(values...)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Convert the row values into a JSON object
-		for i, column := range columns {
-			val := *(values[i].(*interface{}))
-			record[column] = val
-		}
-		//Adding Kassette Metadata
-		record["kassette_data_agent"] = "camunda"
-		record["kassette_data_type"] = tableName
-
-		fetchedId, ok := record[idColumn].(string)
-		if !ok {
-			log.Fatal("Invalid value type string")
-		} else {
-			fetchedIds = append(fetchedIds, fetchedId)
-		}
-		timestamp, ok := record[trackColumn].(time.Time)
-		if !ok {
-			log.Fatal("Invalid value type time.Time")
-		} else {
-			lastTrackPosition = timestamp
-		}
-		data = append(data, record)
-	}
-	// Check for any errors during iteration
-	err = rows.Err()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return lastTrackPosition, fetchedIds, data
-}
-func get_table_schema(dbHandler *sql.DB, tableName string) []map[string]string {
-	query := fmt.Sprintf("SELECT column_name,data_type FROM information_schema.columns WHERE table_name = '%s';", tableName)
-	// Execute the SQL statement and retrieve the rows
-	rows, err := dbHandler.QueryContext(context.Background(), query)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var keyValuePairs []map[string]string
-
-	for rows.Next() {
-		var key, value string
-		err := rows.Scan(&key, &value)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		pair := map[string]string{
-			key: value,
-		}
-
-		keyValuePairs = append(keyValuePairs, pair)
-	}
-
-	return keyValuePairs
-
+	submitPayload(jsonData)
 }
 
 func main() {
@@ -207,27 +233,17 @@ func main() {
 		return
 	}
 
+	// tableName := "act_hi_actinst"
+	// timestampCol := "start_time_"
 	psqlInfo := GetConnectionString()
 	lastTimestamp := time.Now().Add(-2 * time.Hour) //start ingesting data 2 hours back after restart
+	lastIngested := make([]string, 0)
 
-	batchSubmit := make([]map[string]interface{}, 0)
-	kassetteBatchSize := viper.GetInt("kassette-server.batch_size")
-	//read tables settings into Map
-	var trackTables map[string]map[string]string
-	var trackTablesTs map[string]map[string]interface{}
-	trackTablesTs = make(map[string]map[string]interface{})
-	trackTables = make(map[string]map[string]string)
-	for table, _ := range viper.GetStringMapString("tables") {
-		trackTablesTs[table] = make(map[string]interface{})
-		trackTables[table] = make(map[string]string)
-		trackTablesTs[table]["lastTimestamp"] = lastTimestamp
-		trackTablesTs[table]["lastFetched"] = make([]string, 0)
-		for tableSettingKey, tableSettingValue := range viper.GetStringMapString("tables." + table) {
-			trackTables[table][tableSettingKey] = tableSettingValue
-		}
-	}
+	batchSubmit := make([]ActivitiInstance, 0)
+	kassetteBatchSize := viper.GetInt("kassette-server.batchSize")
 
-	dbBatchSize := viper.GetString("database.batch_size")
+	dbBatchSize := viper.GetString("database.batchSize")
+
 	log.Printf("Connecting to Database: %s\n", psqlInfo)
 
 	db, err := sql.Open("postgres", psqlInfo)
@@ -236,28 +252,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// initialise the tables and transfer schema to kassette-server
-	var advancedConfig SourceAdvancedConfig
-	advancedConfig.Source = make([]TableConfig, 0)
-
-	for table, _ := range trackTables {
-		schema := get_table_schema(db, table)
-		var tableConfig TableConfig
-		tableConfig.Agent = "camunda"
-		tableConfig.Type = table
-		tableConfig.Config = schema
-		advancedConfig.Source = append(advancedConfig.Source, tableConfig)
-	}
-
-	jsonData, err := json.Marshal(advancedConfig)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	log.Printf("Json object: %s", string(jsonData))
-	submitPayload(jsonData, "configtable")
-
 	// Create a ticker that polls the database every 10 seconds
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
@@ -265,32 +259,86 @@ func main() {
 	for {
 		select {
 		case <-ticker.C:
-			for table, tableData := range trackTables {
-				lastFetched, ok := trackTablesTs[table]["lastFetched"].([]string)
-				if !ok {
-					log.Fatal("Type Error Array of strings")
+			// Query the database for new records
+
+			// query := fmt.Sprintf("SELECT id_,parent_act_inst_id_,proc_def_key_,proc_def_id_,root_proc_inst_id_,"+
+			// 	"proc_inst_id_,execution_id_,act_id_,task_id_,call_proc_inst_id_,call_case_inst_id_,"+
+			// 	"act_name_,act_type_,assignee_,start_time_,end_time_,duration_,"+
+			// 	"act_inst_state_,sequence_counter_,tenant_id_,removal_time_ "+
+			// 	"FROM %s WHERE %s > $1", tableName, timestampCol)
+
+			query := fmt.Sprintf("select "+
+				"actinst.id_,"+
+				"actinst.proc_inst_id_,"+
+				"actinst.act_name_,"+
+				"actinst.act_type_,"+
+				"actinst.sequence_counter_,"+
+				"actinst.proc_def_key_,"+
+				"procdef.name_,"+
+				"actinst.assignee_,"+
+				"actinst.start_time_,"+
+				"actinst.end_time_,"+
+				"actinst.duration_,"+
+				"actinst.act_inst_state_,"+
+				"detail.type_,"+
+				"detail.var_type_,"+
+				"detail.name_ "+
+				"from act_hi_actinst as actinst "+
+				"left join act_re_procdef as procdef on actinst.proc_def_key_=procdef.key_ "+
+				"left join act_hi_detail as detail on actinst.execution_id_=detail.act_inst_id_ "+
+				"where actinst.start_time_ > $1 "+
+				"and actinst.id_ not in ($2) "+
+				"limit %s;", dbBatchSize)
+
+			rows, err := db.QueryContext(context.Background(), query, lastTimestamp, strings.Join(lastIngested, ", "))
+			if err != nil {
+				log.Fatal(fmt.Sprintf("Error querying database: %v\n", err))
+				continue
+			}
+			defer rows.Close()
+
+			// Process the new records
+			for rows.Next() {
+				var activitiInstanceSql ActivitiInstanceSql
+				err := rows.Scan(&activitiInstanceSql.Actinst_id_,
+					&activitiInstanceSql.Actinst_proc_inst_id_,
+					&activitiInstanceSql.Actinst_act_name_,
+					&activitiInstanceSql.Actinst_act_type_,
+					&activitiInstanceSql.Actinst_sequence_counter_,
+					&activitiInstanceSql.Actinst_proc_def_key_,
+					&activitiInstanceSql.Procdef_name_,
+					&activitiInstanceSql.Actinst_assignee_,
+					&activitiInstanceSql.Actinst_start_time_,
+					&activitiInstanceSql.Actinst_end_time_,
+					&activitiInstanceSql.Actinst_duration,
+					&activitiInstanceSql.Actinst_act_inst_state_,
+					&activitiInstanceSql.Detail_type_,
+					&activitiInstanceSql.Detail_var_type_,
+					&activitiInstanceSql.Detail_name_)
+
+				if err != nil {
+					log.Fatal(fmt.Sprintf("Error reading row: %v\n", err))
+					continue
 				}
-				lastLastTimestamp, lastLastFetched, batch := get_new_records(db, table, dbBatchSize, tableData["track_column"], lastTimestamp, tableData["id_column"], lastFetched)
+
 				// Update the last seen timestamp of processed record
 				// or store IDs of records belonging to the same timestamp to exclude them from the next select
 				// to avoid duplication
-				ts, ok := trackTablesTs[table]["lastTimestamp"].(time.Time)
-				if !ok {
-					log.Fatal("Type Error")
-				}
-				if lastLastTimestamp.After(ts) {
-					trackTablesTs[table]["lastTimestamp"] = lastLastTimestamp
-					trackTablesTs[table]["lastFetched"] = lastFetched[:0]
+				if activitiInstanceSql.Actinst_start_time_.Time.After(lastTimestamp) {
+					lastTimestamp = activitiInstanceSql.Actinst_start_time_.Time
+					lastIngested = nil
 				} else {
-					trackTablesTs[table]["lastFetched"] = append(lastFetched, lastLastFetched...)
+					lastIngested = append(lastIngested, activitiInstanceSql.Actinst_id_.String)
 				}
-				batchSubmit = append(batchSubmit, batch...)
+
+				//save record into a batch
+				batchSubmit = append(batchSubmit, sql2strings(activitiInstanceSql))
 				if len(batchSubmit) >= kassetteBatchSize {
 					startWorker(batchSubmit) //submit a batch if number of records enough
 					batchSubmit = nil
 				}
 			}
-			if len(batchSubmit) > 0 { //submit a batch if anything left after a cycle
+			if len(batchSubmit) > 0 {
 				startWorker(batchSubmit)
 				batchSubmit = nil
 			}
