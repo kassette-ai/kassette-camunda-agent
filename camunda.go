@@ -27,28 +27,28 @@ type ActivitiInstanceSql struct {
 	Actinst_start_time_       sql.NullTime   `json:"actinst_start_time_"`
 	Actinst_end_time_         sql.NullTime   `json:"actinst_end_time_"`
 	Actinst_duration          sql.NullInt64  `json:"actinst_duration_"`
-	Actinst_act_inst_state_   sql.NullString `json:"actinst_act_inst_state_"`
-	Detail_type_              sql.NullString `json:"detail_type_"`
-	Detail_var_type_          sql.NullString `json:"detail_var_type_"`
-	Detail_name_              sql.NullString `json:"detail_name_"`
+	// Actinst_act_inst_state_   sql.NullString `json:"actinst_act_inst_state_"`
+	// Detail_type_              sql.NullString `json:"detail_type_"`
+	// Detail_var_type_          sql.NullString `json:"detail_var_type_"`
+	// Detail_name_              sql.NullString `json:"detail_name_"`
 }
 
 type ActivitiInstance struct {
-	Actinst_id_               string `json:"actinst_id_"`
-	Actinst_proc_inst_id_     string `json:"actinst_proc_inst_id_"`
-	Actinst_act_name_         string `json:"actinst_act_name_"`
-	Actinst_act_type_         string `json:"actinst_act_type_"`
-	Actinst_sequence_counter_ *int64 `json:"actinst_sequence_counter_"`
-	Actinst_proc_def_key_     string `json:"actinst_proc_def_key_"`
-	Procdef_name_             string `json:"procdef_name_"`
-	Actinst_assignee_         string `json:"actinst_assignee_"`
-	Actinst_start_time_       string `json:"actinst_start_time_"`
-	Actinst_end_time_         string `json:"actinst_end_time_"`
-	Actinst_duration          *int64 `json:"actinst_duration_"`
-	Actinst_act_inst_state_   string `json:"actinst_act_inst_state_"`
-	Detail_type_              string `json:"detail_type_"`
-	Detail_var_type_          string `json:"detail_var_type_"`
-	Detail_name_              string `json:"detail_name_"`
+	Actinst_id_               string `json:"event_id"`
+	Actinst_proc_inst_id_     string `json:"process_instance"`
+	Actinst_act_name_         string `json:"task_name"`
+	Actinst_act_type_         string `json:"task_type"`
+	Actinst_sequence_counter_ *int64 `json:"task_seq"`
+	Actinst_proc_def_key_     string `json:"process_id"`
+	Procdef_name_             string `json:"process_name"`
+	Actinst_assignee_         string `json:"assignee_"`
+	Actinst_start_time_       string `json:"task_start_time"`
+	Actinst_end_time_         string `json:"task_end_time"`
+	Actinst_duration          *int64 `json:"task_duration"`
+	// Actinst_act_inst_state_   string `json:"camunda_task_state"`
+	// Detail_type_              string `json:"detail_type_"`
+	// Detail_var_type_          string `json:"detail_var_type_"`
+	// Detail_name_              string `json:"detail_name_"`
 }
 
 type Payload struct {
@@ -137,7 +137,6 @@ func sql2strings(activitiInstanceSql ActivitiInstanceSql) ActivitiInstance {
 	}
 
 	if activitiInstanceSql.Actinst_sequence_counter_.Valid {
-		log.Printf("this is %s", activitiInstanceSql.Actinst_sequence_counter_.Int64)
 		activitiInstance.Actinst_sequence_counter_ = &activitiInstanceSql.Actinst_sequence_counter_.Int64
 	} else {
 		activitiInstance.Actinst_sequence_counter_ = nil
@@ -147,6 +146,12 @@ func sql2strings(activitiInstanceSql ActivitiInstanceSql) ActivitiInstance {
 		activitiInstance.Actinst_proc_def_key_ = activitiInstanceSql.Actinst_proc_def_key_.String
 	} else {
 		activitiInstance.Actinst_proc_def_key_ = ""
+	}
+
+	if activitiInstanceSql.Procdef_name_.Valid {
+		activitiInstance.Procdef_name_ = activitiInstanceSql.Procdef_name_.String
+	} else {
+		activitiInstance.Procdef_name_ = ""
 	}
 
 	if activitiInstanceSql.Actinst_assignee_.Valid {
@@ -168,41 +173,34 @@ func sql2strings(activitiInstanceSql ActivitiInstanceSql) ActivitiInstance {
 	}
 
 	if activitiInstanceSql.Actinst_duration.Valid {
-		log.Printf("thas is %s", activitiInstanceSql.Actinst_duration)
 		activitiInstance.Actinst_duration = &activitiInstanceSql.Actinst_duration.Int64
 	} else {
 		activitiInstance.Actinst_duration = nil
 	}
 
-	if activitiInstanceSql.Actinst_act_inst_state_.Valid {
-		activitiInstance.Actinst_act_inst_state_ = activitiInstanceSql.Actinst_act_inst_state_.String
-	} else {
-		activitiInstance.Actinst_act_inst_state_ = ""
-	}
+	// if activitiInstanceSql.Actinst_act_inst_state_.Valid {
+	// 	activitiInstance.Actinst_act_inst_state_ = activitiInstanceSql.Actinst_act_inst_state_.String
+	// } else {
+	// 	activitiInstance.Actinst_act_inst_state_ = ""
+	// }
 
-	if activitiInstanceSql.Procdef_name_.Valid {
-		activitiInstance.Procdef_name_ = activitiInstanceSql.Procdef_name_.String
-	} else {
-		activitiInstance.Procdef_name_ = ""
-	}
+	// if activitiInstanceSql.Detail_type_.Valid {
+	// 	activitiInstance.Detail_type_ = activitiInstanceSql.Detail_type_.String
+	// } else {
+	// 	activitiInstance.Detail_type_ = ""
+	// }
 
-	if activitiInstanceSql.Detail_type_.Valid {
-		activitiInstance.Detail_type_ = activitiInstanceSql.Detail_type_.String
-	} else {
-		activitiInstance.Detail_type_ = ""
-	}
+	// if activitiInstanceSql.Detail_var_type_.Valid {
+	// 	activitiInstance.Detail_var_type_ = activitiInstanceSql.Detail_var_type_.String
+	// } else {
+	// 	activitiInstance.Detail_var_type_ = ""
+	// }
 
-	if activitiInstanceSql.Detail_var_type_.Valid {
-		activitiInstance.Detail_var_type_ = activitiInstanceSql.Detail_var_type_.String
-	} else {
-		activitiInstance.Detail_var_type_ = ""
-	}
-
-	if activitiInstanceSql.Detail_name_.Valid {
-		activitiInstance.Detail_name_ = activitiInstanceSql.Detail_name_.String
-	} else {
-		activitiInstance.Detail_name_ = ""
-	}
+	// if activitiInstanceSql.Detail_name_.Valid {
+	// 	activitiInstance.Detail_name_ = activitiInstanceSql.Detail_name_.String
+	// } else {
+	// 	activitiInstance.Detail_name_ = ""
+	// }
 	return activitiInstance
 }
 
@@ -278,14 +276,14 @@ func main() {
 				"actinst.assignee_,"+
 				"actinst.start_time_,"+
 				"actinst.end_time_,"+
-				"actinst.duration_,"+
-				"actinst.act_inst_state_,"+
-				"detail.type_,"+
-				"detail.var_type_,"+
-				"detail.name_ "+
+				"actinst.duration_ "+
+				// "actinst.act_inst_state_,"+
+				// "detail.type_,"+
+				// "detail.var_type_,"+
+				// "detail.name_ "+
 				"from act_hi_actinst as actinst "+
 				"left join act_re_procdef as procdef on actinst.proc_def_key_=procdef.key_ "+
-				"left join act_hi_detail as detail on actinst.execution_id_=detail.act_inst_id_ "+
+				//				"left join act_hi_detail as detail on actinst.execution_id_=detail.act_inst_id_ "+
 				"where actinst.start_time_ > $1 "+
 				"and actinst.id_ not in ($2) "+
 				"limit %s;", dbBatchSize)
@@ -310,11 +308,11 @@ func main() {
 					&activitiInstanceSql.Actinst_assignee_,
 					&activitiInstanceSql.Actinst_start_time_,
 					&activitiInstanceSql.Actinst_end_time_,
-					&activitiInstanceSql.Actinst_duration,
-					&activitiInstanceSql.Actinst_act_inst_state_,
-					&activitiInstanceSql.Detail_type_,
-					&activitiInstanceSql.Detail_var_type_,
-					&activitiInstanceSql.Detail_name_)
+					&activitiInstanceSql.Actinst_duration)
+				// &activitiInstanceSql.Actinst_act_inst_state_,
+				// &activitiInstanceSql.Detail_type_,
+				// &activitiInstanceSql.Detail_var_type_,
+				// &activitiInstanceSql.Detail_name_)
 
 				if err != nil {
 					log.Fatal(fmt.Sprintf("Error reading row: %v\n", err))
