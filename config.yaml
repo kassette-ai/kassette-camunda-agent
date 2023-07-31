@@ -6,16 +6,9 @@ database:
   password: camunda
   port: 5431
   ssl_mode: disable
-  batch_size: 100
+  batchSize: 100
 kassette-server:
   url: http://host.docker.internal:8088
-  batch_size: 10
+  batchSize: 10
 kassette-agent:
   uid: camunda
-tables:
-  act_hi_actinst:
-    track_column: start_time_
-    id_column: id_
-  act_hi_detail:
-    track_column: time_
-    id_column: id_    
