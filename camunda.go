@@ -67,7 +67,7 @@ func GetConnectionString() string {
 }
 
 func submitPayload(jsonData []byte) {
-	url := viper.GetString("kassette-server.url")
+	url := viper.GetString("kassette-server.url") + "/extract"
 	uid := viper.GetString("kassette-agent.uid")
 	maxAttempts := 20
 	initialBackoff := 1 * time.Second
