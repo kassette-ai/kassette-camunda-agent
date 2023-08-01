@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -68,10 +69,12 @@ func GetConnectionString() string {
 
 func submitPayload(jsonData []byte) {
 	url := viper.GetString("kassette-server.url") + "/extract"
-	uid := viper.GetString("kassette-agent.uid")
+	key := viper.GetString("kassette-agent.key")
 	maxAttempts := 20
 	initialBackoff := 1 * time.Second
 	maxBackoff := 10 * time.Second
+	auth := key + ":" // Set auth header to UID
+	basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 
@@ -81,7 +84,7 @@ func submitPayload(jsonData []byte) {
 			return
 		}
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("write_key", uid)
+		req.Header.Set("Authorization", basicAuth)
 		// Send the request
 		client := &http.Client{}
 		resp, err := client.Do(req)
