@@ -69,11 +69,12 @@ func GetConnectionString() string {
 
 func submitPayload(jsonData []byte) {
 	url := viper.GetString("kassette-server.url") + "/extract"
-	key := viper.GetString("kassette-agent.key")
+	customerName := viper.GetString("kassette-agent.customerName")
+	secretKey := viper.GetString("kassette-agent.secretKey")
 	maxAttempts := 20
 	initialBackoff := 1 * time.Second
 	maxBackoff := 10 * time.Second
-	auth := key + ":" // Set auth header to UID
+	auth := customerName + ":" + secretKey // Set auth header to UID
 	basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
