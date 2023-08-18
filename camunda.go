@@ -86,6 +86,8 @@ func submitPayload(jsonData []byte) {
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", basicAuth)
+		req.Header.Set("Kassette-Customer-Name", customerName)
+		req.Header.Set("Kassette-Secret-Key", secretKey)
 		// Send the request
 		client := &http.Client{}
 		resp, err := client.Do(req)
