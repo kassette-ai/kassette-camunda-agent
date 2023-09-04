@@ -25,8 +25,8 @@ type ActivitiInstanceSql struct {
 	Actinst_proc_def_key_     sql.NullString `json:"actinst_proc_def_key_"`
 	Procdef_name_             sql.NullString `json:"procdef_name_"`
 	Actinst_assignee_         sql.NullString `json:"actinst_assignee_"`
-	Actinst_start_time_       sql.NullTime   `json:"actinst_start_time_"`
-	Actinst_end_time_         sql.NullTime   `json:"actinst_end_time_"`
+	Actinst_start_time_       sql.NullString `json:"actinst_start_time_"`
+	Actinst_end_time_         sql.NullString `json:"actinst_end_time_"`
 	Actinst_duration          sql.NullInt64  `json:"actinst_duration_"`
 	Procinst_business_key_    sql.NullString `json:"procinst_business_key_"`
 	// Actinst_act_inst_state_   sql.NullString `json:"actinst_act_inst_state_"`
@@ -117,7 +117,7 @@ func submitPayload(jsonData []byte) {
 func sql2strings(activitiInstanceSql ActivitiInstanceSql) ActivitiInstance {
 
 	var activitiInstance ActivitiInstance
-	log.Printf("fetched record %s, with name %s at %s", activitiInstanceSql.Actinst_proc_inst_id_.String, activitiInstanceSql.Actinst_act_name_.String, activitiInstanceSql.Actinst_start_time_.Time.String())
+	log.Printf("fetched record %s, with name %s at %s", activitiInstanceSql.Actinst_proc_inst_id_.String, activitiInstanceSql.Actinst_act_name_.String, activitiInstanceSql.Actinst_start_time_.String)
 
 	// convert SQL type into Strings
 	if activitiInstanceSql.Actinst_id_.Valid {
@@ -169,13 +169,13 @@ func sql2strings(activitiInstanceSql ActivitiInstanceSql) ActivitiInstance {
 	}
 
 	if activitiInstanceSql.Actinst_start_time_.Valid {
-		activitiInstance.Actinst_start_time_ = activitiInstanceSql.Actinst_start_time_.Time.Format("2006-01-02 15:04:05")
+		activitiInstance.Actinst_start_time_ = activitiInstanceSql.Actinst_start_time_.String
 	} else {
 		activitiInstance.Actinst_start_time_ = ""
 	}
 
 	if activitiInstanceSql.Actinst_end_time_.Valid {
-		activitiInstance.Actinst_end_time_ = activitiInstanceSql.Actinst_end_time_.Time.Format("2006-01-02 15:04:05")
+		activitiInstance.Actinst_end_time_ = activitiInstanceSql.Actinst_end_time_.String
 	} else {
 		activitiInstance.Actinst_end_time_ = ""
 	}
@@ -340,13 +340,21 @@ func main() {
 				// Update the last seen timestamp of processed record
 				// or store IDs of records belonging to the same timestamp to exclude them from the next select
 				// to avoid duplication
-				if activitiInstanceSql.Actinst_start_time_.Time.After(lastTimestamp) {
-					lastTimestamp = activitiInstanceSql.Actinst_start_time_.Time
-					lastIngested = nil
-				} else {
-					lastIngested = append(lastIngested, activitiInstanceSql.Actinst_id_.String)
-				}
+				if activitiInstanceSql.Actinst_start_time_.Valid {
+					start_time, err := time.Parse(time.RFC3339, activitiInstanceSql.Actinst_start_time_.String)
+					if err != nil {
+						log.Fatal(fmt.Sprintf("Error converting timestamp: %v\n", err))
+					}
 
+					if start_time.After(lastTimestamp) {
+						lastTimestamp = start_time
+						lastIngested = nil
+					} else {
+						lastIngested = append(lastIngested, activitiInstanceSql.Actinst_id_.String)
+					}
+				} else {
+					log.Fatal(fmt.Sprintf("Not a valid string: %v\n", activitiInstanceSql.Actinst_start_time_))
+				}
 				//save record into a batch
 				batchSubmit = append(batchSubmit, sql2strings(activitiInstanceSql))
 				if len(batchSubmit) >= kassetteBatchSize {
