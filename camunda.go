@@ -43,11 +43,11 @@ type ActivitiInstance struct {
 	Actinst_sequence_counter_ *int64 `json:"task_seq"`
 	Actinst_proc_def_key_     string `json:"process_id"`
 	Procdef_name_             string `json:"process_name"`
-	Actinst_assignee_         string `json:"assignee_"`
+	Actinst_assignee_         string `json:"assignee"`
 	Actinst_start_time_       string `json:"task_start_time"`
 	Actinst_end_time_         string `json:"task_end_time"`
 	Actinst_duration          *int64 `json:"task_duration"`
-	Procinst_business_key_    string `json:"procinst_business_key"`
+	Procinst_business_key_    string `json:"business_key"`
 	// Actinst_act_inst_state_   string `json:"camunda_task_state"`
 	// Detail_type_              string `json:"detail_type_"`
 	// Detail_var_type_          string `json:"detail_var_type_"`
