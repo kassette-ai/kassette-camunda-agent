@@ -28,6 +28,7 @@ type ActivitiInstanceSql struct {
 	Actinst_start_time_       sql.NullTime   `json:"actinst_start_time_"`
 	Actinst_end_time_         sql.NullTime   `json:"actinst_end_time_"`
 	Actinst_duration          sql.NullInt64  `json:"actinst_duration_"`
+	Procinst_business_key_    sql.NullString `json:"procinst_business_key_"`
 	// Actinst_act_inst_state_   sql.NullString `json:"actinst_act_inst_state_"`
 	// Detail_type_              sql.NullString `json:"detail_type_"`
 	// Detail_var_type_          sql.NullString `json:"detail_var_type_"`
@@ -46,6 +47,7 @@ type ActivitiInstance struct {
 	Actinst_start_time_       string `json:"task_start_time"`
 	Actinst_end_time_         string `json:"task_end_time"`
 	Actinst_duration          *int64 `json:"task_duration"`
+	Procinst_business_key_    string `json:"procinst_business_key"`
 	// Actinst_act_inst_state_   string `json:"camunda_task_state"`
 	// Detail_type_              string `json:"detail_type_"`
 	// Detail_var_type_          string `json:"detail_var_type_"`
@@ -184,6 +186,12 @@ func sql2strings(activitiInstanceSql ActivitiInstanceSql) ActivitiInstance {
 		activitiInstance.Actinst_duration = nil
 	}
 
+	if activitiInstanceSql.Procinst_business_key_.Valid {
+		activitiInstance.Procinst_business_key_ = activitiInstanceSql.Procinst_business_key_.String
+	} else {
+		activitiInstance.Procinst_business_key_ = ""
+	}
+
 	// if activitiInstanceSql.Actinst_act_inst_state_.Valid {
 	// 	activitiInstance.Actinst_act_inst_state_ = activitiInstanceSql.Actinst_act_inst_state_.String
 	// } else {
@@ -282,13 +290,15 @@ func main() {
 				"actinst.assignee_,"+
 				"actinst.start_time_,"+
 				"actinst.end_time_,"+
-				"actinst.duration_ "+
+				"actinst.duration_,"+
+				"procinst.business_key_ "+
 				// "actinst.act_inst_state_,"+
 				// "detail.type_,"+
 				// "detail.var_type_,"+
 				// "detail.name_ "+
 				"from act_hi_actinst as actinst "+
-				"left join act_re_procdef as procdef on actinst.proc_def_key_=procdef.key_ "+
+				"left join act_re_procdef as procdef on (actinst.proc_def_key_=procdef.key_) "+
+				"left join act_hi_procinst as procinst on (procinst.proc_inst_id_=actinst.proc_inst_id_) "+
 				//				"left join act_hi_detail as detail on actinst.execution_id_=detail.act_inst_id_ "+
 				"where actinst.start_time_ > $1 "+
 				"and actinst.id_ not in ($2) "+
@@ -314,7 +324,9 @@ func main() {
 					&activitiInstanceSql.Actinst_assignee_,
 					&activitiInstanceSql.Actinst_start_time_,
 					&activitiInstanceSql.Actinst_end_time_,
-					&activitiInstanceSql.Actinst_duration)
+					&activitiInstanceSql.Actinst_duration,
+					&activitiInstanceSql.Procinst_business_key_)
+
 				// &activitiInstanceSql.Actinst_act_inst_state_,
 				// &activitiInstanceSql.Detail_type_,
 				// &activitiInstanceSql.Detail_var_type_,
