@@ -4,7 +4,7 @@ on: workflow_dispatch
 
 
 env:
-  AGENT_IMAGE_NAME: metaops/kassette-agent
+  AGENT_IMAGE_NAME: metaops/kassette-camunda-agent
 
 
 jobs:
@@ -40,8 +40,8 @@ jobs:
     - name: cleanup the build artefacts if any
       run: rm -f kassete-agent
 
-    - name: Build kassette-agent
-      run: go mod init kassette.ai/kassette-agent && go mod tidy && go build
+    - name: Build kassette-camunda-agent
+      run: go mod init kassette.ai/kassette-camunda-agent && go mod tidy && go build
 
     - name: Build docker image for kassete-agent
       run:  docker build . --file Dockerfile --tag ${{ env.AGENT_IMAGE_NAME }}:${{ env.DOCKER_TAG }}
