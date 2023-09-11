@@ -29,6 +29,7 @@ type ActivitiInstanceSql struct {
 	Actinst_end_time_         sql.NullString `json:"actinst_end_time_"`
 	Actinst_duration          sql.NullInt64  `json:"actinst_duration_"`
 	Procinst_business_key_    sql.NullString `json:"procinst_business_key_"`
+	Root_proc_inst_id_        sql.NullString `json:"root_proc_inst_id_"`
 	// Actinst_act_inst_state_   sql.NullString `json:"actinst_act_inst_state_"`
 	// Detail_type_              sql.NullString `json:"detail_type_"`
 	// Detail_var_type_          sql.NullString `json:"detail_var_type_"`
@@ -48,6 +49,7 @@ type ActivitiInstance struct {
 	Actinst_end_time_         string `json:"task_end_time"`
 	Actinst_duration          *int64 `json:"task_duration"`
 	Procinst_business_key_    string `json:"business_key"`
+	Root_proc_inst_id_        string `json:"root_process_instance"`
 	// Actinst_act_inst_state_   string `json:"camunda_task_state"`
 	// Detail_type_              string `json:"detail_type_"`
 	// Detail_var_type_          string `json:"detail_var_type_"`
@@ -192,6 +194,12 @@ func sql2strings(activitiInstanceSql ActivitiInstanceSql) ActivitiInstance {
 		activitiInstance.Procinst_business_key_ = ""
 	}
 
+	if activitiInstanceSql.Root_proc_inst_id_.Valid {
+		activitiInstance.Root_proc_inst_id_ = activitiInstanceSql.Root_proc_inst_id_.String
+	} else {
+		activitiInstance.Root_proc_inst_id_ = ""
+	}
+
 	// if activitiInstanceSql.Actinst_act_inst_state_.Valid {
 	// 	activitiInstance.Actinst_act_inst_state_ = activitiInstanceSql.Actinst_act_inst_state_.String
 	// } else {
@@ -291,7 +299,8 @@ func main() {
 				"actinst.start_time_,"+
 				"actinst.end_time_,"+
 				"actinst.duration_,"+
-				"procinst.business_key_ "+
+				"procinst.business_key_,"+
+				"actinst.root_proc_inst_id_ "+
 				// "actinst.act_inst_state_,"+
 				// "detail.type_,"+
 				// "detail.var_type_,"+
@@ -325,7 +334,8 @@ func main() {
 					&activitiInstanceSql.Actinst_start_time_,
 					&activitiInstanceSql.Actinst_end_time_,
 					&activitiInstanceSql.Actinst_duration,
-					&activitiInstanceSql.Procinst_business_key_)
+					&activitiInstanceSql.Procinst_business_key_,
+					&activitiInstanceSql.Root_proc_inst_id_)
 
 				// &activitiInstanceSql.Actinst_act_inst_state_,
 				// &activitiInstanceSql.Detail_type_,
