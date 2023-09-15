@@ -241,6 +241,9 @@ func startWorker(activitiInstances []ActivitiInstance) {
 }
 
 func main() {
+	// defaults
+	viper.SetDefault("kassette-agent.camundaRetroFitDays", 0)
+
 	// Load Config file
 	viper.SetConfigFile("config.yaml")
 	viper.SetConfigType("yaml")
@@ -261,8 +264,8 @@ func main() {
 
 	batchSubmit := make([]ActivitiInstance, 0)
 	kassetteBatchSize := viper.GetInt("kassette-server.batchSize")
-
 	dbBatchSize := viper.GetString("database.batchSize")
+	camundaRetroFitDays := viper.GetInt("kassette-agent.camundaRetroFitDays")
 
 	log.Printf("Connecting to Database: %s\n", psqlInfo)
 
@@ -296,8 +299,8 @@ func main() {
 				"actinst.proc_def_key_,"+
 				"procdef.name_,"+
 				"actinst.assignee_,"+
-				"actinst.start_time_,"+
-				"actinst.end_time_,"+
+				"(actinst.start_time_ - INTERVAL '%d DAY'),"+
+				"(actinst.end_time_ - INTERVAL '%d DAY'),"+
 				"actinst.duration_,"+
 				"procinst.business_key_,"+
 				"actinst.root_proc_inst_id_ "+
@@ -311,7 +314,7 @@ func main() {
 				//				"left join act_hi_detail as detail on actinst.execution_id_=detail.act_inst_id_ "+
 				"where actinst.start_time_ > $1 "+
 				"and actinst.id_ not in ($2) "+
-				"limit %s;", dbBatchSize)
+				"limit %s;", camundaRetroFitDays, camundaRetroFitDays, dbBatchSize)
 
 			rows, err := db.QueryContext(context.Background(), query, lastTimestamp, strings.Join(lastIngested, ", "))
 			if err != nil {
