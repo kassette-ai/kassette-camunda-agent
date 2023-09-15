@@ -259,7 +259,8 @@ func main() {
 	// tableName := "act_hi_actinst"
 	// timestampCol := "start_time_"
 	psqlInfo := GetConnectionString()
-	lastTimestamp := time.Now().Add(-2 * time.Hour) //start ingesting data 2 hours back after restart
+	//lastTimestamp := time.Now().Add(-2 * time.Hour) //start ingesting data 2 hours back after restart
+	lastTimestamp := time.Now()
 	lastIngested := make([]string, 0)
 
 	batchSubmit := make([]ActivitiInstance, 0)
@@ -358,9 +359,10 @@ func main() {
 					if err != nil {
 						log.Fatal(fmt.Sprintf("Error converting timestamp: %v\n", err))
 					}
+					retroStartTime := start_time.AddDate(0, 0, camundaRetroFitDays)
 
-					if start_time.After(lastTimestamp) {
-						lastTimestamp = start_time
+					if retroStartTime.After(lastTimestamp) {
+						lastTimestamp = retroStartTime
 						lastIngested = nil
 					} else {
 						lastIngested = append(lastIngested, activitiInstanceSql.Actinst_id_.String)
