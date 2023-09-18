@@ -243,6 +243,7 @@ func startWorker(activitiInstances []ActivitiInstance) {
 func main() {
 	// defaults
 	viper.SetDefault("kassette-agent.camundaRetroFitDays", 0)
+	viper.SetDefault("kassette-agent.camundaPollInterval", 5)
 
 	// Load Config file
 	viper.SetConfigFile("config.yaml")
@@ -267,6 +268,7 @@ func main() {
 	kassetteBatchSize := viper.GetInt("kassette-server.batchSize")
 	dbBatchSize := viper.GetString("database.batchSize")
 	camundaRetroFitDays := viper.GetInt("kassette-agent.camundaRetroFitDays")
+	camundaPollInterval := viper.GetInt("kassette-agent.camundaPollInterval")
 
 	log.Printf("Connecting to Database: %s\n", psqlInfo)
 
@@ -277,7 +279,7 @@ func main() {
 	defer db.Close()
 
 	// Create a ticker that polls the database every 10 seconds
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(time.Duration(camundaPollInterval) * time.Second)
 	defer ticker.Stop()
 
 	for {
