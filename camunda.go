@@ -119,7 +119,7 @@ func submitPayload(jsonData []byte) {
 func sql2strings(activitiInstanceSql ActivitiInstanceSql) ActivitiInstance {
 
 	var activitiInstance ActivitiInstance
-	log.Printf("fetched record %s, with name %s at %s", activitiInstanceSql.Actinst_proc_inst_id_.String, activitiInstanceSql.Actinst_act_name_.String, activitiInstanceSql.Actinst_start_time_.String)
+	//log.Printf("fetched record %s, with name %s at %s", activitiInstanceSql.Actinst_proc_inst_id_.String, activitiInstanceSql.Actinst_act_name_.String, activitiInstanceSql.Actinst_start_time_.String)
 
 	// convert SQL type into Strings
 	if activitiInstanceSql.Actinst_id_.Valid {
@@ -269,7 +269,7 @@ func main() {
 	dbBatchSize := viper.GetString("database.batchSize")
 	camundaRetroFitDays := viper.GetInt("kassette-agent.camundaRetroFitDays")
 	camundaPollInterval := viper.GetInt("kassette-agent.camundaPollInterval")
-
+	log.Printf("Retro days: %v, PollIntervall: %v", camundaRetroFitDays, camundaPollInterval)
 	log.Printf("Connecting to Database: %s\n", psqlInfo)
 
 	db, err := sql.Open("postgres", psqlInfo)
@@ -292,7 +292,7 @@ func main() {
 			// 	"act_name_,act_type_,assignee_,start_time_,end_time_,duration_,"+
 			// 	"act_inst_state_,sequence_counter_,tenant_id_,removal_time_ "+
 			// 	"FROM %s WHERE %s > $1", tableName, timestampCol)
-
+			log.Printf("Ticker: %s", lastTimestamp)
 			query := fmt.Sprintf("select "+
 				"actinst.id_,"+
 				"actinst.proc_inst_id_,"+
